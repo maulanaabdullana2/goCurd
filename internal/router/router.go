@@ -21,7 +21,7 @@ func SetupUserRoutes(app *fiber.App, userHandler *userHandler.UserHandler) {
 func SetupProductRoutes(app *fiber.App, productHandler *ProductHandler.ProductHandler) {
 	app.Get("/products", middleware.Authenticate, productHandler.FindAll)
 	app.Get("/products/:id", productHandler.FindByID)
-	app.Post("/products", productHandler.Create)
+	app.Post("/products", middleware.Authenticate, productHandler.Create)
 	app.Put("/products/:id", productHandler.Update)
 	app.Delete("/products/:id", productHandler.Delete)
 }

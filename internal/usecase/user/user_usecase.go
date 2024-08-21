@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -42,12 +43,26 @@ func NewUserUsecase(userRepo userRepository.UserRepository, secretKey string) Us
 	}
 }
 
-func hashPassword(password string) (string, error) {
+func HashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Error().Err(err).Msg("pkg::HashPassword - Error while hashing password")
 		return "", err
 	}
 	return string(hashedPassword), nil
+}
+
+func ComparePassword(hashedPassword, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		log.Warn().
+			Str("hashedPassword", hashedPassword).
+			Str("inputPassword", password).
+			Err(err).
+			Msg("pkg::ComparePassword - Error while comparing password")
+		return false
+	}
+	return true
 }
 
 func (u *userUsecase) GetUsers() ([]userModels.User, error) {
@@ -66,6 +81,12 @@ func (u *userUsecase) GetUserByID(id uuid.UUID) (userModels.User, error) {
 }
 
 func (u *userUsecase) CreateUser(user userModels.User) (*userModels.User, error) {
+	// Validasi Username
+	if user.Name == "" {
+		return nil, ErrUsernameValidate
+	}
+
+	// Cek apakah username sudah ada
 	existingUserByUsername, err := u.userRepo.GetByUsername(user.Name)
 	if err != nil {
 		return nil, err
@@ -73,10 +94,8 @@ func (u *userUsecase) CreateUser(user userModels.User) (*userModels.User, error)
 	if existingUserByUsername != nil {
 		return nil, ErrUsernameTaken
 	}
-	if user.Name == "" {
-		return nil, ErrUsernameValidate
-	}
 
+	// Cek apakah email sudah ada
 	existingUserByEmail, err := u.userRepo.GetByEmail(user.Email)
 	if err != nil {
 		return nil, err
@@ -85,12 +104,14 @@ func (u *userUsecase) CreateUser(user userModels.User) (*userModels.User, error)
 		return nil, ErrEmailTaken
 	}
 
-	hashedPassword, err := hashPassword(user.Password)
+	// Hash password
+	hashedPassword, err := HashPassword(user.Password)
 	if err != nil {
-		return nil, err
+		return nil, err // Tangani error saat hashing password
 	}
 	user.Password = hashedPassword
 
+	// Simpan pengguna baru ke database
 	res, err := u.userRepo.Create(user)
 	if err != nil {
 		return nil, err
@@ -126,7 +147,7 @@ func (u *userUsecase) UpdateUser(user userModels.User) error {
 	}
 
 	if user.Password != "" {
-		hashedPassword, err := hashPassword(user.Password)
+		hashedPassword, err := HashPassword(user.Password)
 		if err != nil {
 			return err
 		}
@@ -154,11 +175,6 @@ func (u *userUsecase) SearchUsers(query string) ([]userModels.User, error) {
 	return u.userRepo.Search(query)
 }
 
-func hashedPasswordd(hashpass, password string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashpass), []byte(password))
-	return err == nil
-}
-
 func (u *userUsecase) Login(email, password string) (string, error) {
 	user, err := u.userRepo.GetByEmail(email)
 	if err != nil {
@@ -168,7 +184,7 @@ func (u *userUsecase) Login(email, password string) (string, error) {
 		return "", ErrNotFound
 	}
 
-	if !hashedPasswordd(user.Password, password) {
+	if !ComparePassword(user.Password, password) {
 		return "", ErrInvalidCredentials
 	}
 

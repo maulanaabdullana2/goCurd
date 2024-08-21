@@ -8,62 +8,59 @@ import (
 	"github.com/google/uuid"
 )
 
-var (
-	ErrNotFound = errors.New("resource not found")
-)
+var ErrNotFound = errors.New("product not found")
 
 type ProductUsecase interface {
-	FindAll() ([]ProductModels.Product, error)
-	FindByID(id uuid.UUID) (ProductModels.Product, error)
-	Create(product ProductModels.Product) (*ProductModels.Product, error)
-	Update(product ProductModels.Product) error
-	Delete(id uuid.UUID) error
+	GetProducts(userID uuid.UUID) ([]ProductModels.Product, error)
+	GetProductByID(id uuid.UUID, userID uuid.UUID) (ProductModels.Product, error)
+	CreateProduct(product *ProductModels.Product) (*ProductModels.Product, error)
+	UpdateProduct(product *ProductModels.Product, userID uuid.UUID) error
+	DeleteProduct(id uuid.UUID, userID uuid.UUID) error
 }
 
 type productUsecase struct {
-	productRepository ProductRepository.ProductRepository
+	productRepo ProductRepository.ProductRepository
 }
 
-func NewProductUsecase(productRepository ProductRepository.ProductRepository) ProductUsecase {
-	return &productUsecase{productRepository}
+func NewProductUsecase(repo ProductRepository.ProductRepository) ProductUsecase {
+	return &productUsecase{productRepo: repo}
 }
 
-func (u *productUsecase) FindAll() ([]ProductModels.Product, error) {
-	return u.productRepository.GetProducts()
+func (u *productUsecase) GetProducts(userID uuid.UUID) ([]ProductModels.Product, error) {
+	return u.productRepo.GetProducts(userID)
 }
 
-func (u *productUsecase) FindByID(id uuid.UUID) (ProductModels.Product, error) {
-	product, err := u.productRepository.GetProductByID(id)
-	if err != nil {
-		return ProductModels.Product{}, err
-	}
-	if product.ID == uuid.Nil {
+func (u *productUsecase) GetProductByID(id uuid.UUID, userID uuid.UUID) (ProductModels.Product, error) {
+	product, err := u.productRepo.GetProductByID(id, userID)
+	if err != nil || product.ID == uuid.Nil {
 		return ProductModels.Product{}, ErrNotFound
 	}
-
-	return u.productRepository.GetProductByID(id)
+	return product, nil
 }
 
-func (u *productUsecase) Create(product ProductModels.Product) (*ProductModels.Product, error) {
-	res, err := u.productRepository.CreateProduct(product)
+func (u *productUsecase) CreateProduct(product *ProductModels.Product) (*ProductModels.Product, error) {
+	return u.productRepo.CreateProduct(product)
+}
+
+func (u *productUsecase) UpdateProduct(product *ProductModels.Product, userID uuid.UUID) error {
+	existingProduct, err := u.productRepo.GetProductByID(product.ID, userID)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return res, nil
-}
-
-func (u *productUsecase) Update(product ProductModels.Product) error {
-	product, err := u.productRepository.GetProductByID(product.ID)
-	if err != nil {
+	if existingProduct.ID == uuid.Nil {
 		return ErrNotFound
 	}
-	return u.productRepository.UpdateProduct(product)
+	product.UserID = userID
+	return u.productRepo.UpdateProduct(product)
 }
 
-func (u *productUsecase) Delete(id uuid.UUID) error {
-	_, err := u.productRepository.GetProductByID(id)
+func (u *productUsecase) DeleteProduct(id uuid.UUID, userID uuid.UUID) error {
+	existingProduct, err := u.productRepo.GetProductByID(id, userID)
 	if err != nil {
+		return err
+	}
+	if existingProduct.ID == uuid.Nil {
 		return ErrNotFound
 	}
-	return u.productRepository.DeleteProduct(id)
+	return u.productRepo.DeleteProduct(id, userID)
 }

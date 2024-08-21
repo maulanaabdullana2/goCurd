@@ -55,7 +55,14 @@ func Authenticate(c *fiber.Ctx) error {
 		}
 	}
 
-	c.Locals("userID", claims["user_id"])
+	// Cast user_id to string and store in Locals
+	userID, ok := claims["user_id"].(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid user ID in token",
+		})
+	}
+	c.Locals("userID", userID)
 
 	return c.Next()
 }

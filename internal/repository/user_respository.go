@@ -31,7 +31,7 @@ func NewUserRepository(db *gorm.DB) UserRepository {
 // GetAll mengambil semua pengguna
 func (r *userRepository) GetAll() ([]userModels.User, error) {
 	var users []userModels.User
-	if err := r.db.Find(&users).Error; err != nil {
+	if err := r.db.Select("id, name, email, created_at").Find(&users).Error; err != nil {
 		return nil, err
 	}
 	return users, nil
