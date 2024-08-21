@@ -1,0 +1,10 @@
+# .air.toml
+[build]
+# Perintah untuk membangun aplikasi
+cmd = "go build -o ./tmp/main.exe ./cmd"
+# Lokasi file executable yang dihasilkan
+bin = "./tmp/main.exe"
+# Direktori yang dipantau untuk perubahan
+watch_dir = ["."]
+# File atau direktori yang dikecualikan dari pemantauan
+exclude_dir = ["tmp"]
