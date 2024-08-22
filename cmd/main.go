@@ -9,12 +9,14 @@ import (
 	productUsecase "fiber-crud/internal/usecase/product"
 	Userusecase "fiber-crud/internal/usecase/user"
 	db "fiber-crud/package"
+	"fiber-crud/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
 
+	utils.InitCloudinary("dgdvfpzrw", "666481357989953", "qiTWQejmUoN4iariFo44_2e8pCI")
 	db := db.InitDB()
 
 	userRepo := user.NewUserRepository(db)

@@ -3,6 +3,7 @@ package ProductHandler
 import (
 	ProductModels "fiber-crud/internal/domain/product"
 	productUsecase "fiber-crud/internal/usecase/product"
+	"fiber-crud/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -66,6 +67,20 @@ func (h *ProductHandler) FindByID(c *fiber.Ctx) error {
 }
 
 func (h *ProductHandler) Create(c *fiber.Ctx) error {
+	file, err := c.FormFile("image")
+	if err != nil {
+		if err == fiber.ErrBadRequest {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to process file"})
+	}
+
+	fileContent, err := file.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open uploaded file"})
+	}
+	defer fileContent.Close()
+
 	var product ProductModels.Product
 	if err := c.BodyParser(&product); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -83,14 +98,23 @@ func (h *ProductHandler) Create(c *fiber.Ctx) error {
 
 	product.UserID = userID
 
+	imageURL, err := utils.UploadImageToCloudinary(fileContent)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to upload image"})
+	}
+
+	product.ImageURL = imageURL
+
 	res, err := h.productUsecase.CreateProduct(&product)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
+
 	return c.Status(fiber.StatusCreated).JSON(res)
 }
 
 func (h *ProductHandler) Update(c *fiber.Ctx) error {
+
 	var product ProductModels.Product
 	if err := c.BodyParser(&product); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -114,14 +138,46 @@ func (h *ProductHandler) Update(c *fiber.Ctx) error {
 
 	product.ID = id
 
-	err = h.productUsecase.UpdateProduct(&product, userID)
-	if err == productUsecase.ErrNotFound {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Product not found"})
-	}
-
+	existingProduct, err := h.productUsecase.GetProductByID(id, userID)
 	if err != nil {
+		if err == productUsecase.ErrNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Product not found"})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
+
+	if file, err := c.FormFile("image"); err == nil {
+		fileContent, err := file.Open()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open uploaded file"})
+		}
+		defer fileContent.Close()
+
+		// Upload the new image
+		imageURL, err := utils.UploadImageToCloudinary(fileContent)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to upload image"})
+		}
+
+		// Update product with new image URL
+		product.ImageURL = imageURL
+	} else if existingProduct.ImageURL != "" {
+		// If no new image is uploaded, use the existing image URL
+		product.ImageURL = existingProduct.ImageURL
+	} else {
+		// If no image is provided and no existing image URL, handle as needed
+		product.ImageURL = "" // or handle accordingly
+	}
+
+	// Update the product
+	err = h.productUsecase.UpdateProduct(&product, userID)
+	if err != nil {
+		if err == productUsecase.ErrNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Product not found"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
 	return c.Status(fiber.StatusOK).JSON(product)
 }
 
