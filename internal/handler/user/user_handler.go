@@ -32,6 +32,37 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 	return c.JSON(users)
 }
 
+func (h *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
+	// Retrieve userID from the context
+	userID, ok := c.Locals("userID").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "User not authenticated",
+		})
+	}
+
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid user ID format",
+		})
+	}
+
+	user, err := h.userUsecase.GetUserByID(id)
+	if err == Userusecase.ErrNotFound {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	} else if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	// Return user details
+	return c.JSON(user)
+}
+
 // GetUserByID handles requests to get a user by ID
 func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 	idStr := c.Params("id")
