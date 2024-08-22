@@ -1,2 +1,4 @@
-# File konfigurasi lokal
-.env
+# Ignore sensitive files
+config/.env
+*.key
+*.secret
