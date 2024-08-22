@@ -28,6 +28,7 @@ type UserUsecase interface {
 	UpdateUser(user userModels.User) error
 	DeleteUser(id uuid.UUID) error
 	SearchUsers(query string) ([]userModels.User, error)
+	LoginOrSignup(googleID, email, name, avatar string) (*userModels.User, error)
 	Login(email, password string) (string, error)
 }
 
@@ -166,6 +167,39 @@ func (u *userUsecase) DeleteUser(id uuid.UUID) error {
 		return ErrNotFound
 	}
 	return u.userRepo.Delete(id)
+}
+
+func (u *userUsecase) LoginOrSignup(googleID, email, name, avatar string) (*userModels.User, error) {
+	var user *userModels.User
+	var err error
+
+	// Cek apakah pengguna sudah ada berdasarkan email
+	user, err = u.userRepo.GetByEmail(email)
+	if err != nil {
+		return nil, err
+	}
+
+	// Jika tidak ada berdasarkan email, cek berdasarkan Google ID
+	if user == nil || user.ID == uuid.Nil {
+		user, err = u.userRepo.FindGoogleId(googleID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Jika pengguna belum ada, buat pengguna baru
+	if user == nil || user.ID == uuid.Nil {
+		user, err = u.userRepo.Create(userModels.User{
+			Name:     name,
+			Email:    email,
+			GoogleID: googleID,
+			Avatar:   avatar,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return user, nil
 }
 
 func (u *userUsecase) SearchUsers(query string) ([]userModels.User, error) {

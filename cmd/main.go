@@ -16,6 +16,7 @@ import (
 
 func main() {
 
+	utils.InitOAuth2()
 	utils.InitCloudinary("dgdvfpzrw", "666481357989953", "qiTWQejmUoN4iariFo44_2e8pCI")
 	db := db.InitDB()
 

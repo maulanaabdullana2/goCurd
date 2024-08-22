@@ -15,6 +15,7 @@ type UserRepository interface {
 	GetByEmail(email string) (*userModels.User, error)
 	Create(user userModels.User) (*userModels.User, error)
 	Update(user userModels.User) error
+	FindGoogleId(googleId string) (*userModels.User, error)
 	Delete(id uuid.UUID) error
 	Search(query string) ([]userModels.User, error)
 }
@@ -104,4 +105,15 @@ func (r *userRepository) Delete(id uuid.UUID) error {
 		return err
 	}
 	return nil
+}
+
+func (r *userRepository) FindGoogleId(googleId string) (*userModels.User, error) {
+	var u userModels.User
+	if err := r.db.Where("google_id = ?", googleId).First(&u).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil // Return nil if not found
+		}
+		return nil, err
+	}
+	return &u, nil
 }
