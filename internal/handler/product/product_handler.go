@@ -35,7 +35,7 @@ func (h *ProductHandler) FindAll(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
-	return c.JSON(products)
+	return c.JSON(fiber.Map{"data": fiber.Map{"products": products}})
 }
 
 func (h *ProductHandler) FindByID(c *fiber.Ctx) error {
