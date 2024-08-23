@@ -67,20 +67,6 @@ func (h *ProductHandler) FindByID(c *fiber.Ctx) error {
 }
 
 func (h *ProductHandler) Create(c *fiber.Ctx) error {
-	file, err := c.FormFile("image")
-	if err != nil {
-		if err == fiber.ErrBadRequest {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "No file uploaded"})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to process file"})
-	}
-
-	fileContent, err := file.Open()
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open uploaded file"})
-	}
-	defer fileContent.Close()
-
 	var product ProductModels.Product
 	if err := c.BodyParser(&product); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
@@ -98,12 +84,21 @@ func (h *ProductHandler) Create(c *fiber.Ctx) error {
 
 	product.UserID = userID
 
-	imageURL, err := utils.UploadImageToCloudinary(fileContent)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to upload image"})
-	}
+	file, err := c.FormFile("image")
+	if err == nil {
+		fileContent, err := file.Open()
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to open uploaded file"})
+		}
+		defer fileContent.Close()
 
-	product.ImageURL = imageURL
+		imageURL, err := utils.UploadImageToCloudinary(fileContent)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to upload image"})
+		}
+
+		product.ImageURL = imageURL
+	}
 
 	res, err := h.productUsecase.CreateProduct(&product)
 	if err != nil {
