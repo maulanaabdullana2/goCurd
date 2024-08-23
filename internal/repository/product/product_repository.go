@@ -25,7 +25,7 @@ func NewProductRepository(db *gorm.DB) ProductRepository {
 
 func (r *productRepository) GetProducts(userID uuid.UUID) ([]ProductModels.Product, error) {
 	var products []ProductModels.Product
-	if err := r.db.Where("user_id = ?", userID).Find(&products).Error; err != nil {
+	if err := r.db.Preload("Comments").Where("user_id = ?", userID).Find(&products).Error; err != nil {
 		return nil, err
 	}
 	return products, nil

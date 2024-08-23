@@ -1,6 +1,7 @@
 package db
 
 import (
+	CommentModels "fiber-crud/internal/domain/comment"
 	ProductModels "fiber-crud/internal/domain/product"
 	userModels "fiber-crud/internal/domain/user"
 	"log"
@@ -11,7 +12,7 @@ import (
 
 func InitDB() *gorm.DB {
 
-	dsn := "host=localhost user=postgres password=maulana dbname=jajalaja port=5432 sslmode=disable"
+	dsn := "host=localhost user=postgres password=maulana dbname=jajal port=5432 sslmode=disable"
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -23,6 +24,7 @@ func InitDB() *gorm.DB {
 	if err := db.AutoMigrate(
 		&userModels.User{},
 		&ProductModels.Product{},
+		&CommentModels.Comment{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}

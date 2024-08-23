@@ -1,11 +1,14 @@
 package main
 
 import (
+	commentHandler "fiber-crud/internal/handler/comment"
 	ProductHandler "fiber-crud/internal/handler/product"
 	UserHandel "fiber-crud/internal/handler/user"
 	user "fiber-crud/internal/repository"
+	repository "fiber-crud/internal/repository/comment"
 	ProductRepository "fiber-crud/internal/repository/product"
 	"fiber-crud/internal/router"
+	commentUsecase "fiber-crud/internal/usecase/comment"
 	productUsecase "fiber-crud/internal/usecase/product"
 	Userusecase "fiber-crud/internal/usecase/user"
 	db "fiber-crud/package"
@@ -28,10 +31,15 @@ func main() {
 	productUsecase := productUsecase.NewProductUsecase(productRepo)
 	productHandler := ProductHandler.NewProductHandler(productUsecase)
 
+	commentRepo := repository.NewCommentRepository(db)
+	commentUsecase := commentUsecase.NewCommentUsecase(commentRepo)
+	commentHandler := commentHandler.NewCommentHandler(commentUsecase)
+
 	app := fiber.New()
 
 	router.SetupUserRoutes(app, userHandler)
 	router.SetupProductRoutes(app, productHandler)
+	router.SetupComment(app, commentHandler)
 
 	app.Use(func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{

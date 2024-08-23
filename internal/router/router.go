@@ -1,6 +1,7 @@
 package router
 
 import (
+	CommentHandler "fiber-crud/internal/handler/comment"
 	ProductHandler "fiber-crud/internal/handler/product"
 	userHandler "fiber-crud/internal/handler/user"
 	"fiber-crud/middleware"
@@ -26,6 +27,11 @@ func SetupProductRoutes(app *fiber.App, productHandler *ProductHandler.ProductHa
 	app.Post("/products", middleware.AuthMiddleware(), productHandler.Create)
 	app.Put("/products/:id", middleware.AuthMiddleware(), productHandler.Update)
 	app.Delete("/products/:id", middleware.AuthMiddleware(), productHandler.Delete)
+}
+
+func SetupComment(app *fiber.App, commentHandler *CommentHandler.CommentHandler) {
+	app.Post("/products/:id/comments", middleware.AuthMiddleware(), commentHandler.CreateCommentProductID)
+	app.Get("/products/:id/comments", middleware.AuthMiddleware(), commentHandler.GetCommentsByProductid)
 }
 
 // func SetupUserRoutes(app *fiber.App, userHandler *userHandler.UserHandler) {
