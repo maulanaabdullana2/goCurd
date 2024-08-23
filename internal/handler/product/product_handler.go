@@ -153,23 +153,18 @@ func (h *ProductHandler) Update(c *fiber.Ctx) error {
 		}
 		defer fileContent.Close()
 
-		// Upload the new image
 		imageURL, err := utils.UploadImageToCloudinary(fileContent)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to upload image"})
 		}
 
-		// Update product with new image URL
 		product.ImageURL = imageURL
 	} else if existingProduct.ImageURL != "" {
-		// If no new image is uploaded, use the existing image URL
 		product.ImageURL = existingProduct.ImageURL
 	} else {
-		// If no image is provided and no existing image URL, handle as needed
-		product.ImageURL = "" // or handle accordingly
+		product.ImageURL = ""
 	}
 
-	// Update the product
 	err = h.productUsecase.UpdateProduct(&product, userID)
 	if err != nil {
 		if err == productUsecase.ErrNotFound {

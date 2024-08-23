@@ -17,6 +17,7 @@ func SetupUserRoutes(app *fiber.App, userHandler *userHandler.UserHandler) {
 	app.Delete("/users/:id", userHandler.DeleteUser)
 	app.Get("/search", userHandler.SearchUsers)
 	app.Post("/login", userHandler.Login)
+	app.Get("/auth/me", middleware.AuthMiddleware(), userHandler.CurrentUser)
 	app.Get("/auth/google", userHandler.GoogleLogin)
 	app.Get("/auth/google/callback", userHandler.GoogleCallback)
 }

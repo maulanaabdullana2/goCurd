@@ -26,6 +26,7 @@ type UserUsecase interface {
 	CreateUser(user userModels.User) (*userModels.User, error)
 	UpdateUser(user userModels.User) error
 	DeleteUser(id uuid.UUID) error
+	GetCurrentUser(userID uuid.UUID) (userModels.User, error)
 	SearchUsers(query string) ([]userModels.User, error)
 	LoginOrSignup(googleID, email, name, avatar string) (*userModels.User, error)
 	Login(email, password string) (string, error)
@@ -61,6 +62,10 @@ func ComparePassword(hashedPassword, password string) bool {
 		return false
 	}
 	return true
+}
+
+func (u *userUsecase) GetCurrentUser(userID uuid.UUID) (userModels.User, error) {
+	return u.userRepo.GetByID(userID)
 }
 
 func (u *userUsecase) GetUsers() ([]userModels.User, error) {
@@ -102,7 +107,7 @@ func (u *userUsecase) CreateUser(user userModels.User) (*userModels.User, error)
 
 	hashedPassword, err := HashPassword(user.Password)
 	if err != nil {
-		return nil, err // Tangani error saat hashing password
+		return nil, err
 	}
 	user.Password = hashedPassword
 

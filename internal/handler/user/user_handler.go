@@ -12,6 +12,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
+	"gorm.io/gorm"
 )
 
 type UserHandler struct {
@@ -32,7 +33,28 @@ func (h *UserHandler) GetUsers(c *fiber.Ctx) error {
 	return c.JSON(users)
 }
 
-// GetUserByID handles requests to get a user by ID
+func (h *UserHandler) CurrentUser(c *fiber.Ctx) error {
+	userIDStr, ok := c.Locals("userID").(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid user ID"})
+	}
+
+	user, err := h.userUsecase.GetCurrentUser(userID)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+		}
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to retrieve user"})
+	}
+
+	return c.JSON(user)
+}
+
 func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := uuid.Parse(idStr)
@@ -49,7 +71,6 @@ func (h *UserHandler) GetUserByID(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-// CreateUser handles requests to create a new user
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	var user userModels.User
 	if err := c.BodyParser(&user); err != nil {
@@ -66,7 +87,6 @@ func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(res)
 }
 
-// UpdateUser handles requests to update a user
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := uuid.Parse(idStr)
@@ -92,7 +112,6 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	return c.JSON(user)
 }
 
-// DeleteUser handles requests to delete a user
 func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	idStr := c.Params("id")
 	id, err := uuid.Parse(idStr)
@@ -109,7 +128,6 @@ func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-// SearchUsers handles requests to search for users by query
 func (h *UserHandler) SearchUsers(c *fiber.Ctx) error {
 	query := c.Query("q")
 	if query == "" {
@@ -123,7 +141,6 @@ func (h *UserHandler) SearchUsers(c *fiber.Ctx) error {
 	return c.JSON(users)
 }
 
-// Login handles user login requests
 func (h *UserHandler) Login(c *fiber.Ctx) error {
 	var credentials struct {
 		Email    string `json:"email"`
@@ -147,17 +164,14 @@ func (h *UserHandler) GoogleLogin(c *fiber.Ctx) error {
 	return c.Redirect(url)
 }
 
-// GoogleLogin handles Google OAuth2 login
 func (h *UserHandler) GoogleCallback(c *fiber.Ctx) error {
 	code := c.Query("code")
 
-	// Exchange the authorization code for an access token
 	token, err := utils.GoogleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Create a new HTTP client with the access token
 	client := utils.GoogleOauthConfig.Client(context.Background(), token)
 	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
 	if err != nil {
@@ -169,7 +183,6 @@ func (h *UserHandler) GoogleCallback(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to get user info"})
 	}
 
-	// Decode the Google user info
 	var googleUser struct {
 		GoogleID string `json:"sub"`
 		Email    string `json:"email"`
@@ -180,7 +193,6 @@ func (h *UserHandler) GoogleCallback(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Use the Google user info to login or signup
 	user, err := h.userUsecase.LoginOrSignup(
 		googleUser.GoogleID,
 		googleUser.Email,
@@ -191,12 +203,10 @@ func (h *UserHandler) GoogleCallback(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Generate JWT token
 	tokenString, err := utils.GenerateJWT(user.ID.String())
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Return the JWT token and user details
 	return c.JSON(fiber.Map{"token": tokenString, "user": user})
 }
