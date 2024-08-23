@@ -26,7 +26,6 @@ func (h *CommentHandler) CreateCommentProductID(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid product ID format"})
 	}
 
-	// Extract the user ID from the context
 	userIDStr, ok := c.Locals("userID").(string)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
@@ -37,31 +36,26 @@ func (h *CommentHandler) CreateCommentProductID(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid user ID"})
 	}
 
-	// Define a struct to parse the request body
 	type CommentRequest struct {
 		Content string `json:"content"`
 	}
 
-	// Parse the request body
 	var requestBody CommentRequest
 	if err := c.BodyParser(&requestBody); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request body"})
 	}
 
-	// Create the comment model
 	comment := &CommentModels.Comment{
 		ProductID: id,
 		UserID:    userID,
 		Content:   requestBody.Content,
 	}
 
-	// Use the comment usecase to create the comment
 	err = h.commentUsecase.CreateComment(comment)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
-	// Return success status with comment data
 	return c.JSON(fiber.Map{
 		"status":  "success",
 		"comment": comment,
