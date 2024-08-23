@@ -2,12 +2,11 @@ package Userusecase
 
 import (
 	"errors"
-	"time"
 
 	userModels "fiber-crud/internal/domain/user"
 	userRepository "fiber-crud/internal/repository"
+	"fiber-crud/utils"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
@@ -33,14 +32,12 @@ type UserUsecase interface {
 }
 
 type userUsecase struct {
-	userRepo  userRepository.UserRepository
-	secretKey string
+	userRepo userRepository.UserRepository
 }
 
-func NewUserUsecase(userRepo userRepository.UserRepository, secretKey string) UserUsecase {
+func NewUserUsecase(userRepo userRepository.UserRepository) UserUsecase {
 	return &userUsecase{
-		userRepo:  userRepo,
-		secretKey: secretKey,
+		userRepo: userRepo,
 	}
 }
 
@@ -82,12 +79,11 @@ func (u *userUsecase) GetUserByID(id uuid.UUID) (userModels.User, error) {
 }
 
 func (u *userUsecase) CreateUser(user userModels.User) (*userModels.User, error) {
-	// Validasi Username
+
 	if user.Name == "" {
 		return nil, ErrUsernameValidate
 	}
 
-	// Cek apakah username sudah ada
 	existingUserByUsername, err := u.userRepo.GetByUsername(user.Name)
 	if err != nil {
 		return nil, err
@@ -96,7 +92,6 @@ func (u *userUsecase) CreateUser(user userModels.User) (*userModels.User, error)
 		return nil, ErrUsernameTaken
 	}
 
-	// Cek apakah email sudah ada
 	existingUserByEmail, err := u.userRepo.GetByEmail(user.Email)
 	if err != nil {
 		return nil, err
@@ -105,14 +100,12 @@ func (u *userUsecase) CreateUser(user userModels.User) (*userModels.User, error)
 		return nil, ErrEmailTaken
 	}
 
-	// Hash password
 	hashedPassword, err := HashPassword(user.Password)
 	if err != nil {
 		return nil, err // Tangani error saat hashing password
 	}
 	user.Password = hashedPassword
 
-	// Simpan pengguna baru ke database
 	res, err := u.userRepo.Create(user)
 	if err != nil {
 		return nil, err
@@ -173,13 +166,11 @@ func (u *userUsecase) LoginOrSignup(googleID, email, name, avatar string) (*user
 	var user *userModels.User
 	var err error
 
-	// Cek apakah pengguna sudah ada berdasarkan email
 	user, err = u.userRepo.GetByEmail(email)
 	if err != nil {
 		return nil, err
 	}
 
-	// Jika tidak ada berdasarkan email, cek berdasarkan Google ID
 	if user == nil || user.ID == uuid.Nil {
 		user, err = u.userRepo.FindGoogleId(googleID)
 		if err != nil {
@@ -187,7 +178,6 @@ func (u *userUsecase) LoginOrSignup(googleID, email, name, avatar string) (*user
 		}
 	}
 
-	// Jika pengguna belum ada, buat pengguna baru
 	if user == nil || user.ID == uuid.Nil {
 		user, err = u.userRepo.Create(userModels.User{
 			Name:     name,
@@ -222,20 +212,10 @@ func (u *userUsecase) Login(email, password string) (string, error) {
 		return "", ErrInvalidCredentials
 	}
 
-	token, err := generateJWT(user.ID, u.secretKey)
+	token, err := utils.GenerateJWT(user.ID.String())
 	if err != nil {
 		return "", err
 	}
 
 	return token, nil
-}
-
-func generateJWT(userID uuid.UUID, secretKey string) (string, error) {
-	claims := jwt.MapClaims{
-		"user_id": userID.String(),
-		"exp":     time.Now().Add(time.Hour * 72).Unix(),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(secretKey))
 }

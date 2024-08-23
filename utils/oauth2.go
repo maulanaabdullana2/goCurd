@@ -12,7 +12,6 @@ import (
 var GoogleOauthConfig *oauth2.Config
 
 func InitOAuth2() error {
-	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
 		return err
 	}

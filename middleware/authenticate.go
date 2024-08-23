@@ -1,68 +1,32 @@
 package middleware
 
 import (
-	"errors"
-	"strings"
-	"time"
+	"fiber-crud/utils"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 )
 
-var SecretKey = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+func AuthMiddleware() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		tokenString := c.Get("Authorization")
 
-func Authenticate(c *fiber.Ctx) error {
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Authorization header is missing",
-		})
-	}
-
-	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-	if tokenStr == authHeader {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid authorization header format",
-		})
-	}
-
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
+		if tokenString == "" {
+			return fiber.NewError(fiber.StatusUnauthorized, "No token provided")
 		}
-		return []byte(SecretKey), nil
-	})
 
-	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token claims",
-		})
-	}
-
-	// Optional: Check for expiration time
-	if exp, ok := claims["exp"].(float64); ok {
-		if time.Unix(int64(exp), 0).Before(time.Now()) {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Token has expired",
-			})
+		if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
+			tokenString = tokenString[7:]
 		}
-	}
 
-	// Cast user_id to string and store in Locals
-	userID, ok := claims["user_id"].(string)
-	if !ok {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid user ID in token",
-		})
-	}
-	c.Locals("userID", userID)
+		fmt.Println("Received token:", tokenString)
 
-	return c.Next()
+		claims, err := utils.ParseTokenString(tokenString)
+		if err != nil {
+			return fiber.NewError(fiber.StatusUnauthorized, "Invalid token")
+		}
+
+		c.Locals("userID", claims.Subject)
+		return c.Next()
+	}
 }

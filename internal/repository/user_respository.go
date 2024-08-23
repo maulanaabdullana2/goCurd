@@ -7,7 +7,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// UserRepository mendefinisikan antarmuka untuk operasi CRUD pengguna
 type UserRepository interface {
 	GetAll() ([]userModels.User, error)
 	GetByID(id uuid.UUID) (userModels.User, error)
@@ -24,12 +23,10 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-// NewUserRepository membuat instance baru UserRepository
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db}
 }
 
-// GetAll mengambil semua pengguna
 func (r *userRepository) GetAll() ([]userModels.User, error) {
 	var users []userModels.User
 	if err := r.db.Select("id, name, email, created_at").Find(&users).Error; err != nil {
@@ -38,19 +35,17 @@ func (r *userRepository) GetAll() ([]userModels.User, error) {
 	return users, nil
 }
 
-// GetByID mengambil pengguna berdasarkan ID
 func (r *userRepository) GetByID(id uuid.UUID) (userModels.User, error) {
 	var u userModels.User
 	if err := r.db.First(&u, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return userModels.User{}, nil // Return empty user if not found
+			return userModels.User{}, nil
 		}
 		return userModels.User{}, err
 	}
 	return u, nil
 }
 
-// Search mencari pengguna berdasarkan query string
 func (r *userRepository) Search(query string) ([]userModels.User, error) {
 	var users []userModels.User
 	if err := r.db.Where("name LIKE ?", "%"+query+"%").Find(&users).Error; err != nil {
@@ -59,31 +54,28 @@ func (r *userRepository) Search(query string) ([]userModels.User, error) {
 	return users, nil
 }
 
-// GetByUsername mengambil pengguna berdasarkan username
 func (r *userRepository) GetByUsername(username string) (*userModels.User, error) {
 	var u userModels.User
 	if err := r.db.Where("name = ?", username).First(&u).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil // Return nil if not found
+			return nil, nil
 		}
 		return nil, err
 	}
 	return &u, nil
 }
 
-// GetByEmail mengambil pengguna berdasarkan email
 func (r *userRepository) GetByEmail(email string) (*userModels.User, error) {
 	var u userModels.User
 	if err := r.db.Where("email = ?", email).First(&u).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil // Return nil if not found
+			return nil, nil
 		}
 		return nil, err
 	}
 	return &u, nil
 }
 
-// Create membuat pengguna baru
 func (r *userRepository) Create(u userModels.User) (*userModels.User, error) {
 	if err := r.db.Create(&u).Error; err != nil {
 		return nil, err
@@ -91,7 +83,6 @@ func (r *userRepository) Create(u userModels.User) (*userModels.User, error) {
 	return &u, nil
 }
 
-// Update memperbarui pengguna yang ada
 func (r *userRepository) Update(u userModels.User) error {
 	if err := r.db.Save(&u).Error; err != nil {
 		return err
@@ -99,7 +90,6 @@ func (r *userRepository) Update(u userModels.User) error {
 	return nil
 }
 
-// Delete menghapus pengguna berdasarkan ID
 func (r *userRepository) Delete(id uuid.UUID) error {
 	if err := r.db.Delete(&userModels.User{}, "id = ?", id).Error; err != nil {
 		return err
@@ -111,7 +101,7 @@ func (r *userRepository) FindGoogleId(googleId string) (*userModels.User, error)
 	var u userModels.User
 	if err := r.db.Where("google_id = ?", googleId).First(&u).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil // Return nil if not found
+			return nil, nil
 		}
 		return nil, err
 	}

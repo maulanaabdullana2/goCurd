@@ -18,15 +18,14 @@ func SetupUserRoutes(app *fiber.App, userHandler *userHandler.UserHandler) {
 	app.Post("/login", userHandler.Login)
 	app.Get("/auth/google", userHandler.GoogleLogin)
 	app.Get("/auth/google/callback", userHandler.GoogleCallback)
-	app.Get("/auth/me", middleware.Authenticate, userHandler.GetCurrentUser)
 }
 
 func SetupProductRoutes(app *fiber.App, productHandler *ProductHandler.ProductHandler) {
-	app.Get("/products", middleware.Authenticate, productHandler.FindAll)
-	app.Get("/products/:id", middleware.Authenticate, productHandler.FindByID)
-	app.Post("/products", middleware.Authenticate, productHandler.Create)
-	app.Put("/products/:id", middleware.Authenticate, productHandler.Update)
-	app.Delete("/products/:id", middleware.Authenticate, productHandler.Delete)
+	app.Get("/products", middleware.AuthMiddleware(), productHandler.FindAll)
+	app.Get("/products/:id", middleware.AuthMiddleware(), productHandler.FindByID)
+	app.Post("/products", middleware.AuthMiddleware(), productHandler.Create)
+	app.Put("/products/:id", middleware.AuthMiddleware(), productHandler.Update)
+	app.Delete("/products/:id", middleware.AuthMiddleware(), productHandler.Delete)
 }
 
 // func SetupUserRoutes(app *fiber.App, userHandler *userHandler.UserHandler) {

@@ -21,8 +21,7 @@ func main() {
 	db := db.InitDB()
 
 	userRepo := user.NewUserRepository(db)
-	secretKey := "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	userUsecase := Userusecase.NewUserUsecase(userRepo, secretKey)
+	userUsecase := Userusecase.NewUserUsecase(userRepo)
 	userHandler := UserHandel.NewUserHandler(userUsecase)
 
 	productRepo := ProductRepository.NewProductRepository(db)

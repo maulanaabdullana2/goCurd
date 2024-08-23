@@ -13,9 +13,7 @@ import (
 
 var cld *cloudinary.Cloudinary
 
-// InitCloudinary initializes the Cloudinary client using environment variables.
 func InitCloudinary() error {
-	// Muat variabel lingkungan dari file .env
 	err := godotenv.Load()
 	if err != nil {
 		return fmt.Errorf("error loading .env file: %v", err)
