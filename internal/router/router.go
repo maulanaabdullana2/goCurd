@@ -1,6 +1,7 @@
 package router
 
 import (
+	handler "fiber-crud/internal/handler/cart"
 	CommentHandler "fiber-crud/internal/handler/comment"
 	ProductHandler "fiber-crud/internal/handler/product"
 	userHandler "fiber-crud/internal/handler/user"
@@ -31,8 +32,12 @@ func SetupProductRoutes(app *fiber.App, productHandler *ProductHandler.ProductHa
 }
 
 func SetupComment(app *fiber.App, commentHandler *CommentHandler.CommentHandler) {
-	app.Post("/products/:id/comments", middleware.AuthMiddleware(), commentHandler.CreateCommentProductID)
-	app.Get("/products/:id/comments", middleware.AuthMiddleware(), commentHandler.GetCommentsByProductid)
+	app.Post("/products/comments/:id", middleware.AuthMiddleware(), commentHandler.CreateCommentProductID)
+	app.Get("/products/comments/:id", middleware.AuthMiddleware(), commentHandler.GetCommentsByProductid)
+}
+
+func SetupCart(app *fiber.App, cartHandler *handler.CartHandler) {
+	app.Post("/carts/:id", middleware.AuthMiddleware(), cartHandler.AddItemToCart)
 }
 
 // func SetupUserRoutes(app *fiber.App, userHandler *userHandler.UserHandler) {

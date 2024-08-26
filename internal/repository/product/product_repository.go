@@ -13,6 +13,7 @@ type ProductRepository interface {
 	CreateProduct(product *ProductModels.Product) (*ProductModels.Product, error)
 	UpdateProduct(product *ProductModels.Product) error
 	DeleteProduct(id uuid.UUID, userID uuid.UUID) error
+	DecreaseStock(productID uuid.UUID, quantity int) error
 }
 
 type productRepository struct {
@@ -60,5 +61,22 @@ func (r *productRepository) DeleteProduct(id uuid.UUID, userID uuid.UUID) error 
 	if err := r.db.Delete(&ProductModels.Product{}, "id = ? AND user_id = ?", id, userID).Error; err != nil {
 		return err
 	}
+	return nil
+}
+
+func (r *productRepository) DecreaseStock(productID uuid.UUID, quantity int) error {
+
+	result := r.db.Model(&ProductModels.Product{}).
+		Where("id = ? AND stock >= ?", productID, quantity).
+		Update("stock", gorm.Expr("stock - ?", quantity))
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
 	return nil
 }

@@ -13,6 +13,7 @@ type Product struct {
 	Name        string
 	Description string
 	Price       float64
+	Stock       int
 	ImageURL    string
 	Comments    []CommentModels.Comment `gorm:"foreignKey:ProductID"`
 	CreatedAt   time.Time
