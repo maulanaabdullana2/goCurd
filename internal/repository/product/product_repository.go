@@ -13,6 +13,8 @@ type ProductRepository interface {
 	CreateProduct(product *ProductModels.Product) (*ProductModels.Product, error)
 	UpdateProduct(product *ProductModels.Product) error
 	DeleteProduct(id uuid.UUID, userID uuid.UUID) error
+	GetAllProducts() ([]ProductModels.Product, error)
+	GetAllProductsByid(id uuid.UUID) ([]ProductModels.Product, error)
 	DecreaseStock(productID uuid.UUID, quantity int) error
 }
 
@@ -79,4 +81,20 @@ func (r *productRepository) DecreaseStock(productID uuid.UUID, quantity int) err
 	}
 
 	return nil
+}
+
+func (r *productRepository) GetAllProducts() ([]ProductModels.Product, error) {
+	var products []ProductModels.Product
+	if err := r.db.Preload("Comments").Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
+func (r *productRepository) GetAllProductsByid(id uuid.UUID) ([]ProductModels.Product, error) {
+	var products []ProductModels.Product
+	if err := r.db.Preload("Comments").Where("id = ?", id).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
 }

@@ -18,6 +18,7 @@ type cartUsecase struct {
 
 type CartUsecase interface {
 	AddItemToCart(userID uuid.UUID, productID uuid.UUID, quantity int) error
+	GetAllcartItems(userID uuid.UUID) ([]cartModels.CartModels, error)
 }
 
 func NewCartUsecase(cartRepo CartRepository.CartRepository, productRepo ProductRepository.ProductRepository) CartUsecase {
@@ -26,11 +27,11 @@ func NewCartUsecase(cartRepo CartRepository.CartRepository, productRepo ProductR
 
 func (u *cartUsecase) AddItemToCart(userID uuid.UUID, productID uuid.UUID, quantity int) error {
 	// Fetch product to check if it exists
-	product, err := u.productRepository.GetProductByID(productID, userID)
+	product, err := u.productRepository.GetAllProductsByid(productID)
 	if err != nil {
 		return err
 	}
-	if product.ID == uuid.Nil {
+	if len(product) == 0 {
 		return ErrNotFound
 	}
 
@@ -63,4 +64,8 @@ func (u *cartUsecase) AddItemToCart(userID uuid.UUID, productID uuid.UUID, quant
 	}
 
 	return nil
+}
+
+func (u *cartUsecase) GetAllcartItems(userID uuid.UUID) ([]cartModels.CartModels, error) {
+	return u.cartRepository.GetAllcartItems(userID)
 }

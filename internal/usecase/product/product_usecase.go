@@ -16,6 +16,7 @@ type ProductUsecase interface {
 	CreateProduct(product *ProductModels.Product) (*ProductModels.Product, error)
 	UpdateProduct(product *ProductModels.Product, userID uuid.UUID) error
 	DeleteProduct(id uuid.UUID, userID uuid.UUID) error
+	GetAllproducts() ([]ProductModels.Product, error)
 }
 
 type productUsecase struct {
@@ -63,4 +64,8 @@ func (u *productUsecase) DeleteProduct(id uuid.UUID, userID uuid.UUID) error {
 		return ErrNotFound
 	}
 	return u.productRepo.DeleteProduct(id, userID)
+}
+
+func (u *productUsecase) GetAllproducts() ([]ProductModels.Product, error) {
+	return u.productRepo.GetAllProducts()
 }

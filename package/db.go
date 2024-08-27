@@ -3,6 +3,7 @@ package db
 import (
 	cartModels "fiber-crud/internal/domain/cart"
 	CommentModels "fiber-crud/internal/domain/comment"
+	paymentModels "fiber-crud/internal/domain/payment"
 	ProductModels "fiber-crud/internal/domain/product"
 	userModels "fiber-crud/internal/domain/user"
 	"log"
@@ -27,6 +28,7 @@ func InitDB() *gorm.DB {
 		&ProductModels.Product{},
 		&CommentModels.Comment{},
 		&cartModels.CartModels{},
+		&paymentModels.PaymentModels{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}

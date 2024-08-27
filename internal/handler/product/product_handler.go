@@ -196,3 +196,12 @@ func (h *ProductHandler) Delete(c *fiber.Ctx) error {
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
+
+func (h *ProductHandler) GetAllProduct(c *fiber.Ctx) error {
+	products, err := h.productUsecase.GetAllproducts()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"data": fiber.Map{"products": products}})
+}

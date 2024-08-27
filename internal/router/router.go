@@ -3,6 +3,7 @@ package router
 import (
 	handler "fiber-crud/internal/handler/cart"
 	CommentHandler "fiber-crud/internal/handler/comment"
+	paymentHandler "fiber-crud/internal/handler/payment"
 	ProductHandler "fiber-crud/internal/handler/product"
 	userHandler "fiber-crud/internal/handler/user"
 	"fiber-crud/middleware"
@@ -29,6 +30,7 @@ func SetupProductRoutes(app *fiber.App, productHandler *ProductHandler.ProductHa
 	app.Post("/products", middleware.AuthMiddleware(), productHandler.Create)
 	app.Put("/products/:id", middleware.AuthMiddleware(), productHandler.Update)
 	app.Delete("/products/:id", middleware.AuthMiddleware(), productHandler.Delete)
+	app.Get("/all-products", middleware.AuthMiddleware(), productHandler.GetAllProduct)
 }
 
 func SetupComment(app *fiber.App, commentHandler *CommentHandler.CommentHandler) {
@@ -38,6 +40,12 @@ func SetupComment(app *fiber.App, commentHandler *CommentHandler.CommentHandler)
 
 func SetupCart(app *fiber.App, cartHandler *handler.CartHandler) {
 	app.Post("/carts/:id", middleware.AuthMiddleware(), cartHandler.AddItemToCart)
+	app.Get("/carts", middleware.AuthMiddleware(), cartHandler.GetAllcartItems)
+}
+
+func SetupPayment(app *fiber.App, paymentHandler *paymentHandler.PaymentHandler) {
+	app.Post("/payments", middleware.AuthMiddleware(), paymentHandler.CreatePayment)
+	app.Post("/payment/callback", paymentHandler.UpdatePaymentStatus)
 }
 
 // func SetupUserRoutes(app *fiber.App, userHandler *userHandler.UserHandler) {
